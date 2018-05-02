@@ -1283,8 +1283,10 @@
 			}
 		});
 
-		SProto.makeEventTrackEditor = function(cue, player){ 
-			this.editor = new EventTrackEditor(cue, player); 
+		SProto.makeEventTrackEditor = function(cue, player){
+			if (cue.track.kind === 'metadata'){
+				this.editor = new EventTrackEditor(cue, player);
+			}
 		};
 
 		SProto.destroyEventTrackEditor = function(){
