@@ -1,24 +1,23 @@
+import { Base, Demuxer, Decoder } from './aurora'
 /*
  * AAC.js - Advanced Audio Coding decoder in JavaScript
  * Created by Devon Govett
  * Copyright (c) 2012, Official.fm Labs
  *
- * AAC.js is free software; you can redistribute it and/or modify it 
- * under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation; either version 3 of the 
+ * AAC.js is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 3 of the
  * License, or (at your option) any later version.
  *
- * AAC.js is distributed in the hope that it will be useful, but WITHOUT 
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
- * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General 
+ * AAC.js is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General
  * Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library.
  * If not, see <http://www.gnu.org/licenses/>.
  */
- 
-(function() {
 
 /********************************************************************************
  * Sample offset into the window indicating the beginning of a scalefactor
@@ -169,11 +168,11 @@ const SWB_LONG_WINDOW_COUNT = new Uint8Array([
  */
 const SCALEFACTOR_TABLE = (function() {
     var table = new Float32Array(428);
-    
+
     for (var i = 0; i < 428; i++) {
         table[i] = Math.pow(2, (i - 200) / 4);
     }
-    
+
     return table;
 })();
 
@@ -184,11 +183,11 @@ const SCALEFACTOR_TABLE = (function() {
 const IQ_TABLE = (function() {
     var table = new Float32Array(8191),
         four_thirds = 4/3;
-        
+
     for (var i = 0; i < 8191; i++) {
         table[i] = Math.pow(i, four_thirds);
     }
-    
+
     return table;
 })();
 
@@ -278,7 +277,7 @@ var Huffman = (function() {
         [11, 2046, 1, -1, -1, -1],
         [11, 2047, 1, 1, 1, -1]
     ];
-    
+
     const HCB2 = [
         [3, 0, 0, 0, 0, 0],
         [4, 2, 1, 0, 0, 0],
@@ -362,7 +361,7 @@ var Huffman = (function() {
         [9, 510, 1, 1, -1, 1],
         [9, 511, 1, 1, 1, -1]
     ];
-    
+
     const HCB3 = [
         [1, 0, 0, 0, 0, 0],
         [4, 8, 1, 0, 0, 0],
@@ -446,7 +445,7 @@ var Huffman = (function() {
         [16, 65534, 2, 2, 0, 2],
         [16, 65535, 2, 0, 2, 2]
     ];
-    
+
     const HCB4 = [
         [4, 0, 1, 1, 1, 1],
         [4, 1, 0, 1, 1, 1],
@@ -530,7 +529,7 @@ var Huffman = (function() {
         [12, 4094, 2, 2, 0, 2],
         [12, 4095, 2, 0, 2, 2]
     ];
-    
+
     const HCB5 = [
         [1, 0, 0, 0],
         [4, 8, -1, 0],
@@ -614,7 +613,7 @@ var Huffman = (function() {
         [13, 8190, 4, 4],
         [13, 8191, -4, -4]
     ];
-    
+
     const HCB6 = [
         [4, 0, 0, 0],
         [4, 1, 1, 0],
@@ -698,7 +697,7 @@ var Huffman = (function() {
         [11, 2046, -4, -4],
         [11, 2047, 4, -4]
     ];
-    
+
     const HCB7 = [
         [1, 0, 0, 0],
         [3, 4, 1, 0],
@@ -765,7 +764,7 @@ var Huffman = (function() {
         [12, 4094, 6, 7],
         [12, 4095, 7, 7]
     ];
-    
+
     const HCB8 = [
         [3, 0, 1, 1],
         [4, 2, 2, 1],
@@ -832,7 +831,7 @@ var Huffman = (function() {
         [10, 1022, 0, 7],
         [10, 1023, 7, 7]
     ];
-    
+
     const HCB9 = [
         [1, 0, 0, 0],
         [3, 4, 1, 0],
@@ -1004,7 +1003,7 @@ var Huffman = (function() {
         [15, 32766, 11, 12],
         [15, 32767, 12, 12]
     ];
-    
+
     const HCB10 = [
         [4, 0, 1, 1],
         [4, 1, 1, 2],
@@ -1176,7 +1175,7 @@ var Huffman = (function() {
         [12, 4094, 12, 10],
         [12, 4095, 12, 12]
     ];
-    
+
     const HCB11 = [
         [4, 0, 0, 0],
         [4, 1, 1, 1],
@@ -1468,7 +1467,7 @@ var Huffman = (function() {
         [12, 4094, 0, 15],
         [12, 4095, 15, 15]
     ];
-    
+
     const HCB_SF = [
         [1, 0, 60],
         [3, 4, 59],
@@ -1592,72 +1591,72 @@ var Huffman = (function() {
         [19, 524286, 14],
         [19, 524287, 13]
     ];
-    
+
     const CODEBOOKS = [HCB1, HCB2, HCB3, HCB4, HCB5, HCB6, HCB7, HCB8, HCB9, HCB10, HCB11];
     const UNSIGNED = [false, false, true, true, false, false, true, true, true, true, true],
-          QUAD_LEN = 4, 
+          QUAD_LEN = 4,
           PAIR_LEN = 2;
-    
+
     var Huffman = {
         findOffset: function(stream, table) {
             var off = 0,
                 len = table[off][0],
                 cw = stream.readSmall(len);
-                
+
             while (cw !== table[off][1]) {
                 var j = table[++off][0] - len;
                 len = table[off][0];
                 cw <<= j;
                 cw |= stream.readSmall(j); // TODO: find out why stream.read(j) returns weird values here
             }
-            
+
             return off;
         },
-        
+
         signValues: function(stream, data, off, len) {
             for (var i = off; i < off + len; i++) {
                 if (data[i] && stream.readOne())
                     data[i] = -data[i];
             }
         },
-        
+
         getEscape: function(stream, s) {
             var i = 4;
             while (stream.readOne())
                 i++;
-                
+
             var j = stream.readSmall(i) | (1 << i);
             return s < 0 ? -j : j;
         },
-        
+
         decodeScaleFactor: function(stream) {
             var offset = this.findOffset(stream, HCB_SF);
             return HCB_SF[offset][2];
         },
-        
+
         decodeSpectralData: function(stream, cb, data, off) {
             var HCB = CODEBOOKS[cb - 1],
                 offset = this.findOffset(stream, HCB);
-                
+
             data[off] = HCB[offset][2];
             data[off + 1] = HCB[offset][3];
-            
+
             if (cb < 5) {
                 data[off + 2] = HCB[offset][4];
                 data[off + 3] = HCB[offset][5];
             }
-            
+
             // sign and escape
             if (cb < 11) {
                 if (UNSIGNED[cb - 1])
                     this.signValues(stream, data, off, cb < 5 ? QUAD_LEN : PAIR_LEN);
-                    
+
             } else if (cb === 11 || cb > 15) {
                 this.signValues(stream, data, off, cb < 5 ? QUAD_LEN : PAIR_LEN);
-                
-                if (Math.abs(data[off]) === 16) 
+
+                if (Math.abs(data[off]) === 16)
                     data[off] = this.getEscape(stream, data[off]);
-                    
+
                 if (Math.abs(data[off + 1]) === 16)
                     data[off + 1] = this.getEscape(stream, data[off + 1]);
             } else {
@@ -1665,13 +1664,13 @@ var Huffman = (function() {
             }
         }
     };
-    
+
     return Huffman;
-    
+
 })();
 
 var TNS = (function() {
-    
+
     // Temporal Noise Shaping
     function TNS(config) {
         this.maxBands = TNS_MAX_BANDS_1024[config.sampleIndex]
@@ -1680,19 +1679,19 @@ var TNS = (function() {
         this.direction = new Array(8);
         this.order = new Array(8);
         this.coef = new Array(8);
-        
+
         // Probably could allocate these as needed
         for (var w = 0; w < 8; w++) {
             this.length[w] = new Int32Array(4);
             this.direction[w] = new Array(4);
             this.order[w] = new Int32Array(4);
             this.coef[w] = new Array(4);
-            
+
             for (var filt = 0; filt < 4; filt++) {
                 this.coef[w][filt] = new Float32Array(TNS_MAX_ORDER);
             }
         }
-        
+
         this.lpc = new Float32Array(TNS_MAX_ORDER);
         this.tmp = new Float32Array(TNS_MAX_ORDER);
     }
@@ -1700,29 +1699,29 @@ var TNS = (function() {
     const TNS_MAX_ORDER = 20,
           SHORT_BITS = [1, 4, 3],
           LONG_BITS = [2, 6, 5];
-          
+
     const TNS_COEF_1_3 = [0.00000000, -0.43388373, 0.64278758, 0.34202015],
 
           TNS_COEF_0_3 = [0.00000000, -0.43388373, -0.78183150, -0.97492790,
                           0.98480773, 0.86602539, 0.64278758, 0.34202015],
-                          
+
           TNS_COEF_1_4 = [0.00000000, -0.20791170, -0.40673664, -0.58778524,
                           0.67369562, 0.52643216, 0.36124167, 0.18374951],
-                          
+
           TNS_COEF_0_4 = [0.00000000, -0.20791170, -0.40673664, -0.58778524,
                           -0.74314481, -0.86602539, -0.95105654, -0.99452192,
                           0.99573416, 0.96182561, 0.89516330, 0.79801720,
                           0.67369562, 0.52643216, 0.36124167, 0.18374951],
-                          
+
           TNS_TABLES = [TNS_COEF_0_3, TNS_COEF_0_4, TNS_COEF_1_3, TNS_COEF_1_4];
-          
+
     const TNS_MAX_BANDS_1024 = [31, 31, 34, 40, 42, 51, 46, 46, 42, 42, 42, 39, 39],
           TNS_MAX_BANDS_128 = [9, 9, 10, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14];
-    
+
     TNS.prototype.decode = function(stream, info) {
         var windowCount = info.windowCount,
             bits = info.windowSequence === ICStream.EIGHT_SHORT_SEQUENCE ? SHORT_BITS : LONG_BITS;
-        
+
         for (var w = 0; w < windowCount; w++) {
             if (this.nFilt[w] = stream.readSmall(bits[0])) {
                 var coefRes = stream.readOne(),
@@ -1731,13 +1730,13 @@ var TNS = (function() {
                     order_w = this.order[w],
                     direction_w = this.direction[w],
                     coef_w = this.coef[w];
-                
+
                 for (var filt = 0; filt < nFilt_w; filt++) {
                     length_w[filt] = stream.readSmall(bits[1]);
-                    
+
                     if ((order_w[filt] = stream.readSmall(bits[2])) > 20)
                         throw new Error("TNS filter out of range: " + order_w[filt]);
-                    
+
                     if (order_w[filt]) {
                         direction_w[filt] = !!stream.readOne();
                         var coefCompress = stream.readOne(),
@@ -1746,23 +1745,23 @@ var TNS = (function() {
                             table = TNS_TABLES[tmp],
                             order_w_filt = order_w[filt],
                             coef_w_filt = coef_w[filt];
-                            
+
                         for (var i = 0; i < order_w_filt; i++)
                             coef_w_filt[i] = table[stream.readSmall(coefLen)];
                     }
-                        
+
                 }
             }
         }
     };
-    
+
     TNS.prototype.process = function(ics, data, decode) {
         var mmm = Math.min(this.maxBands, ics.maxSFB),
             lpc = this.lpc,
             tmp = this.tmp,
             info = ics.info,
             windowCount = info.windowCount;
-            
+
         for (var w = 0; w < windowCount; w++) {
             var bottom = info.swbCount,
                 nFilt_w = this.nFilt[w],
@@ -1770,43 +1769,43 @@ var TNS = (function() {
                 order_w = this.order[w],
                 coef_w = this.coef[w],
                 direction_w = this.direction[w];
-            
+
             for (var filt = 0; filt < nFilt_w; filt++) {
                 var top = bottom,
                     bottom = Math.max(0, tmp - length_w[filt]),
                     order = order_w[filt];
-                    
+
                 if (order === 0) continue;
-                
+
                 // calculate lpc coefficients
                 var autoc = coef_w[filt];
                 for (var i = 0; i < order; i++) {
                     var r = -autoc[i];
                     lpc[i] = r;
-    
+
                     for (var j = 0, len = (i + 1) >> 1; j < len; j++) {
                         var f = lpc[j],
                             b = lpc[i - 1 - j];
-    
+
                         lpc[j] = f + r * b;
                         lpc[i - 1 - j] = b + r * f;
                     }
                 }
-                
+
                 var start = info.swbOffsets[Math.min(bottom, mmm)],
                     end = info.swbOffsets[Math.min(top, mmm)],
                     size,
                     inc = 1;
-                    
+
                 if ((size = end - start) <= 0) continue;
-                
+
                 if (direction_w[filt]) {
                     inc = -1;
                     start = end - 1;
                 }
-                
+
                 start += w * 128;
-                
+
                 if (decode) {
                     // ar filter
                     for (var m = 0; m < size; m++, start += inc) {
@@ -1818,10 +1817,10 @@ var TNS = (function() {
                     // ma filter
                     for (var m = 0; m < size; m++, start += inc) {
                         tmp[0] = data[start];
-                        
+
                         for (var i = 1; i <= Math.min(m, order); i++)
                             data[start] += tmp[i] * lpc[i - 1];
-                        
+
                         for (var i = order; i > 0; i--)
                             tmp[i] = tmp[i - 1];
                     }
@@ -1829,13 +1828,13 @@ var TNS = (function() {
             }
         }
     };
-    
+
     return TNS;
 
 })();
 
 var ICStream = (function() {
-    
+
     // Individual Channel Stream
     function ICStream(config) {
         this.info = new ICSInfo();
@@ -1847,53 +1846,53 @@ var ICStream = (function() {
         this.tns = new TNS(config);
         this.specBuf = new Int32Array(4);
     }
-          
+
     ICStream.ZERO_BT = 0;         // Scalefactors and spectral data are all zero.
     ICStream.FIRST_PAIR_BT = 5;   // This and later band types encode two values (rather than four) with one code word.
     ICStream.ESC_BT = 11;         // Spectral data are coded with an escape sequence.
     ICStream.NOISE_BT = 13;       // Spectral data are scaled white noise not coded in the bitstream.
     ICStream.INTENSITY_BT2 = 14;  // Scalefactor data are intensity stereo positions.
     ICStream.INTENSITY_BT = 15;   // Scalefactor data are intensity stereo positions.
-    
+
     ICStream.ONLY_LONG_SEQUENCE = 0;
     ICStream.LONG_START_SEQUENCE = 1;
     ICStream.EIGHT_SHORT_SEQUENCE = 2;
     ICStream.LONG_STOP_SEQUENCE = 3;
-    
+
     const MAX_SECTIONS = 120,
           MAX_WINDOW_GROUP_COUNT = 8;
-    
+
     const SF_DELTA = 60,
           SF_OFFSET = 200;
-    
+
     ICStream.prototype = {
         decode: function(stream, config, commonWindow) {
             this.globalGain = stream.read(8);
-            
+
             if (!commonWindow)
                 this.info.decode(stream, config, commonWindow);
-                
+
             this.decodeBandTypes(stream, config);
             this.decodeScaleFactors(stream);
-            
+
             if (this.pulsePresent = stream.readOne()) {
                 if (this.info.windowSequence === ICStream.EIGHT_SHORT_SEQUENCE)
                     throw new Error("Pulse tool not allowed in eight short sequence.");
-                    
+
                 this.decodePulseData(stream);
             }
-            
+
             if (this.tnsPresent = stream.readOne()) {
                 this.tns.decode(stream, this.info);
             }
-            
+
             if (this.gainPresent = stream.readOne()) {
                 throw new Error("TODO: decode gain control/SSR");
             }
-            
+
             this.decodeSpectralData(stream);
         },
-        
+
         decodeBandTypes: function(stream, config) {
             var bits = this.info.windowSequence === ICStream.EIGHT_SHORT_SEQUENCE ? 3 : 5,
                 groupCount = this.info.groupCount,
@@ -1902,25 +1901,25 @@ var ICStream = (function() {
                 sectEnd = this.sectEnd,
                 idx = 0,
                 escape = (1 << bits) - 1;
-            
+
             for (var g = 0; g < groupCount; g++) {
                 var k = 0;
                 while (k < maxSFB) {
                     var end = k,
                         bandType = stream.readSmall(4);
-                        
+
                     if (bandType === 12)
                         throw new Error("Invalid band type: 12");
-                        
+
                     var incr;
                     while ((incr = stream.readSmall(bits)) === escape)
                         end += incr;
-                        
+
                     end += incr;
-                    
+
                     if (end > maxSFB)
                         throw new Error("Too many bands (" + end + " > " + maxSFB + ")");
-                        
+
                     for (; k < end; k++) {
                         bandTypes[idx] = bandType;
                         sectEnd[idx++] = end;
@@ -1928,7 +1927,7 @@ var ICStream = (function() {
                 }
             }
         },
-        
+
         decodeScaleFactors: function(stream) {
             var groupCount = this.info.groupCount,
                 maxSFB = this.info.maxSFB,
@@ -1938,18 +1937,18 @@ var ICStream = (function() {
                 scaleFactors = this.scaleFactors,
                 sectEnd = this.sectEnd,
                 bandTypes = this.bandTypes;
-                            
+
             for (var g = 0; g < groupCount; g++) {
                 for (var i = 0; i < maxSFB;) {
                     var runEnd = sectEnd[idx];
-                    
+
                     switch (bandTypes[idx]) {
                         case ICStream.ZERO_BT:
                             for (; i < runEnd; i++, idx++) {
                                 scaleFactors[idx] = 0;
                             }
                             break;
-                            
+
                         case ICStream.INTENSITY_BT:
                         case ICStream.INTENSITY_BT2:
                             for(; i < runEnd; i++, idx++) {
@@ -1958,7 +1957,7 @@ var ICStream = (function() {
                                 scaleFactors[idx] = SCALEFACTOR_TABLE[-tmp + SF_OFFSET];
                             }
                             break;
-                            
+
                         case ICStream.NOISE_BT:
                             for(; i < runEnd; i++, idx++) {
                                 if (noiseFlag) {
@@ -1971,13 +1970,13 @@ var ICStream = (function() {
                                 scaleFactors[idx] = -SCALEFACTOR_TABLE[tmp + SF_OFFSET];
                             }
                             break;
-                            
+
                         default:
                             for(; i < runEnd; i++, idx++) {
                                 offset[0] += Huffman.decodeScaleFactor(stream) - SF_DELTA;
-                                if(offset[0] > 255) 
+                                if(offset[0] > 255)
                                     throw new Error("Scalefactor out of range: " + offset[0]);
-                                    
+
                                 scaleFactors[idx] = SCALEFACTOR_TABLE[offset[0] - 100 + SF_OFFSET];
                             }
                             break;
@@ -1985,35 +1984,35 @@ var ICStream = (function() {
                 }
             }
         },
-        
+
         decodePulseData: function(stream) {
             var pulseCount = stream.readSmall(2) + 1,
                 pulseSWB = stream.readSmall(6);
-                
+
             if (pulseSWB >= this.info.swbCount)
                 throw new Error("Pulse SWB out of range: " + pulseSWB);
-                
+
             if (!this.pulseOffset || this.pulseOffset.length !== pulseCount) {
                 // only reallocate if needed
                 this.pulseOffset = new Int32Array(pulseCount);
                 this.pulseAmp = new Int32Array(pulseCount);
             }
-            
+
             this.pulseOffset[0] = this.info.swbOffsets[pulseSWB] + stream.readSmall(5);
             this.pulseAmp[0] = stream.readSmall(4);
-            
+
             if (this.pulseOffset[0] > 1023)
                 throw new Error("Pulse offset out of range: " + this.pulseOffset[0]);
-            
+
             for (var i = 1; i < pulseCount; i++) {
                 this.pulseOffset[i] = stream.readSmall(5) + this.pulseOffset[i - 1];
                 if (this.pulseOffset[i] > 1023)
                     throw new Error("Pulse offset out of range: " + this.pulseOffset[i]);
-                    
+
                 this.pulseAmp[i] = stream.readSmall(4);
             }
         },
-        
+
         decodeSpectralData: function(stream) {
             var data = this.data,
                 info = this.info,
@@ -2023,16 +2022,16 @@ var ICStream = (function() {
                 bandTypes = this.bandTypes,
                 scaleFactors = this.scaleFactors,
                 buf = this.specBuf;
-                
+
             var groupOff = 0, idx = 0;
             for (var g = 0; g < windowGroups; g++) {
                 var groupLen = info.groupLength[g];
-                
+
                 for (var sfb = 0; sfb < maxSFB; sfb++, idx++) {
                     var hcb = bandTypes[idx],
                         off = groupOff + offsets[sfb],
                         width = offsets[sfb + 1] - offsets[sfb];
-                        
+
                     if (hcb === ICStream.ZERO_BT || hcb === ICStream.INTENSITY_BT || hcb === ICStream.INTENSITY_BT2) {
                         for (var group = 0; group < groupLen; group++, off += 128) {
                             for (var i = off; i < off + width; i++) {
@@ -2043,13 +2042,13 @@ var ICStream = (function() {
                         // fill with random values
                         for (var group = 0; group < groupLen; group++, off += 128) {
                             var energy = 0;
-                            
+
                             for (var k = 0; k < width; k++) {
                                 this.randomState *= 1664525 + 1013904223;
                                 data[off + k] = this.randomState;
                                 energy += data[off + k] * data[off + k];
                             }
-                            
+
                             var scale = scaleFactors[idx] / Math.sqrt(energy);
                             for (var k = 0; k < width; k++) {
                                 data[off + k] *= scale;
@@ -2060,7 +2059,7 @@ var ICStream = (function() {
                             var num = (hcb >= ICStream.FIRST_PAIR_BT) ? 2 : 4;
                             for (var k = 0; k < width; k += num) {
                                 Huffman.decodeSpectralData(stream, hcb, buf, 0);
-                                
+
                                 // inverse quantization & scaling
                                 for (var j = 0; j < num; j++) {
                                     data[off + k + j] = (buf[j] > 0) ? IQ_TABLE[buf[j]] : -IQ_TABLE[-buf[j]];
@@ -2072,14 +2071,14 @@ var ICStream = (function() {
                 }
                 groupOff += groupLen << 7;
             }
-            
+
             // add pulse data, if present
             if (this.pulsePresent) {
                 throw new Error('TODO: add pulse data');
             }
         }
     }
-    
+
     // Individual Channel Stream Info
     function ICSInfo() {
         this.windowShape = new Int32Array(2);
@@ -2088,18 +2087,18 @@ var ICStream = (function() {
         this.ltpData1Present = false;
         this.ltpData2Present = false;
     }
-    
+
     ICSInfo.prototype = {
         decode: function(stream, config, commonWindow) {
             stream.advance(1); // reserved
-            
+
             this.windowSequence = stream.readSmall(2);
             this.windowShape[0] = this.windowShape[1];
             this.windowShape[1] = stream.readOne();
-            
+
             this.groupCount = 1;
             this.groupLength[0] = 1;
-            
+
             if (this.windowSequence === ICStream.EIGHT_SHORT_SEQUENCE) {
                 this.maxSFB = stream.readSmall(4);
                 for (var i = 0; i < 7; i++) {
@@ -2110,7 +2109,7 @@ var ICStream = (function() {
                         this.groupLength[this.groupCount - 1] = 1;
                     }
                 }
-                
+
                 this.windowCount = 8;
                 this.swbOffsets = SWB_OFFSET_128[config.sampleIndex];
                 this.swbCount = SWB_SHORT_WINDOW_COUNT[config.sampleIndex];
@@ -2121,62 +2120,62 @@ var ICStream = (function() {
                 this.swbOffsets = SWB_OFFSET_1024[config.sampleIndex];
                 this.swbCount = SWB_LONG_WINDOW_COUNT[config.sampleIndex];
                 this.predictorPresent = !!stream.readOne();
-                
+
                 if (this.predictorPresent)
                     this.decodePrediction(stream, config, commonWindow);
             }
         },
-        
+
         decodePrediction: function(stream, config, commonWindow) {
             throw new Error('Prediction not implemented.');
-            
+
             switch (config.profile) {
                 case AOT_AAC_MAIN:
                     throw new Error('Prediction not implemented.');
                     break;
-                    
+
                 case AOT_AAC_LTP:
                     throw new Error('LTP prediction not implemented.');
                     break;
-                    
+
                 default:
                     throw new Error('Unsupported profile for prediction ' + config.profile);
             }
         }
     };
-    
+
     return ICStream;
-    
+
 })();
 
 var CPEElement = (function() {
-    
+
     // Channel Pair Element
     function CPEElement(config) {
         this.ms_used = [];
         this.left = new ICStream(config);
         this.right = new ICStream(config);
     }
-    
+
     const MAX_MS_MASK = 128;
-    
+
     const MASK_TYPE_ALL_0 = 0,
           MASK_TYPE_USED = 1,
           MASK_TYPE_ALL_1 = 2,
           MASK_TYPE_RESERVED = 3;
-    
+
     CPEElement.prototype.decode = function(stream, config) {
         var left = this.left,
             right = this.right,
             ms_used = this.ms_used;
-            
+
         if (this.commonWindow = !!stream.readOne()) {
             left.info.decode(stream, config, true);
             right.info = left.info;
-    
+
             var mask = stream.readSmall(2);
             this.maskPresent = !!mask;
-            
+
             switch (mask) {
                 case MASK_TYPE_USED:
                     var len = left.info.groupCount * left.info.maxSFB;
@@ -2184,15 +2183,15 @@ var CPEElement = (function() {
                         ms_used[i] = !!stream.readOne();
                     }
                     break;
-                
-                case MASK_TYPE_ALL_0:    
+
+                case MASK_TYPE_ALL_0:
                 case MASK_TYPE_ALL_1:
                     var val = !!mask;
                     for (var i = 0; i < MAX_MS_MASK; i++) {
                         ms_used[i] = val;
                     }
                     break;
-                    
+
                 default:
                     throw new Error("Reserved ms mask type: " + mask);
             }
@@ -2200,17 +2199,17 @@ var CPEElement = (function() {
             for (var i = 0; i < MAX_MS_MASK; i++)
                 ms_used[i] = false;
         }
-        
+
         left.decode(stream, config, this.commonWindow);
         right.decode(stream, config, this.commonWindow);
     };
-    
+
     return CPEElement;
-    
+
 })();
 
 var CCEElement = (function() {
-    
+
     // Channel Coupling Element
     function CCEElement(config) {
         this.ics = new ICStream(config);
@@ -2219,68 +2218,68 @@ var CCEElement = (function() {
         this.chSelect = new Int32Array(8);
         this.gain = new Array(16);
     }
-    
+
     CCEElement.BEFORE_TNS = 0;
     CCEElement.AFTER_TNS = 1;
     CCEElement.AFTER_IMDCT = 2;
-    
+
     const CCE_SCALE = new Float32Array([
         1.09050773266525765921,
         1.18920711500272106672,
         1.4142135623730950488016887,
         2.0
     ]);
-    
+
     CCEElement.prototype = {
         decode: function(stream, config) {
             var channelPair = this.channelPair,
                 idSelect = this.idSelect,
                 chSelect = this.chSelect;
-    
+
             this.couplingPoint = 2 * stream.readOne();
             this.coupledCount = stream.readSmall(3);
-    
+
             var gainCount = 0;
             for (var i = 0; i <= this.coupledCount; i++) {
                 gainCount++;
                 channelPair[i] = stream.readOne();
                 idSelect[i] = stream.readSmall(4);
-    
+
                 if (channelPair[i]) {
                     chSelect[i] = stream.readSmall(2);
                     if (chSelect[i] === 3)
                         gainCount++;
-    
+
                 } else {
                     chSelect[i] = 2;
                 }
             }
-    
+
             this.couplingPoint += stream.readOne() || (this.couplingPoint >>> 1);
-    
+
             var sign = stream.readOne(),
                 scale = CCE_SCALE[stream.readSmall(2)];
-    
+
             this.ics.decode(stream, config, false);
-    
+
             var groupCount = this.ics.info.groupCount,
                 maxSFB = this.ics.info.maxSFB,
                 bandTypes = this.ics.bandTypes;
-    
+
             for (var i = 0; i < gainCount; i++) {
                 var idx = 0,
                     cge = 1,
                     gain = 0,
                     gainCache = 1;
-    
+
                 if (i > 0) {
                     cge = this.couplingPoint === CCEElement.AFTER_IMDCT ? 1 : stream.readOne();
                     gain = cge ? Huffman.decodeScaleFactor(stream) - 60 : 0;
                     gainCache = Math.pow(scale, -gain);
                 }
-    
+
                 var gain_i = this.gain[i] = new Float32Array(120);
-    
+
                 if (this.couplingPoint === CCEElement.AFTER_IMDCT) {
                     gain_i[0] = gainCache;
                 } else {
@@ -2306,16 +2305,16 @@ var CCEElement = (function() {
                 }
             }
         },
-    
+
         applyIndependentCoupling: function(index, data) {
             var gain = this.gain[index][0],
                 iqData = this.ics.data;
-    
+
             for (var i = 0; i < data.length; i++) {
                 data[i] += gain * iqData[i];
             }
         },
-    
+
         applyDependentCoupling: function(index, data) {
             var info = this.ics.info,
                 swbOffsets = info.swbOffsets,
@@ -2323,14 +2322,14 @@ var CCEElement = (function() {
                 maxSFB = info.maxSFB,
                 bandTypes = this.ics.bandTypes,
                 iqData = this.ics.data;
-    
+
             var idx = 0,
                 offset = 0,
                 gains = this.gain[index];
-    
+
             for (var g = 0; g < groupCount; g++) {
                 var len = info.groupLength[g];
-    
+
                 for (var sfb = 0; sfb < maxSFB; sfb++, idx++) {
                     if (bandTypes[idx] !== ICStream.ZERO_BT) {
                         var gain = gains[idx];
@@ -2341,14 +2340,14 @@ var CCEElement = (function() {
                         }
                     }
                 }
-    
+
                 offset += len * 128;
             }
         }
     };
-    
+
     return CCEElement;
-    
+
 })();
 
 const MDCT_TABLE_2048 = [
@@ -2931,9 +2930,9 @@ const MDCT_TABLE_256 = [
     [0.006231782743558, 0.088168389368510],
     [0.004066145255116, 0.088294770302461],
     [0.001898058472816, 0.088367965768336]
-];                                      
+];
 
-const MDCT_TABLE_1920 = [             
+const MDCT_TABLE_1920 = [
     [0.032274858518097, 0.000013202404176],
     [0.032274642494505, 0.000118821372483],
     [0.032274080835421, 0.000224439068308],
@@ -3416,7 +3415,7 @@ const MDCT_TABLE_1920 = [
     [0.000092416705518, 0.032274728903884]
 ];
 
-const MDCT_TABLE_240 = [              
+const MDCT_TABLE_240 = [
     [0.091286604111815, 0.000298735779793],
     [0.091247502481454, 0.002688238127538],
     [0.091145864370807, 0.005075898091152],
@@ -3477,128 +3476,128 @@ const MDCT_TABLE_240 = [
     [0.006864449533597, 0.091028636515846],
     [0.004479245345574, 0.091177133616206],
     [0.002090971306534, 0.091263142463585]
-];                    
+];
 
 var FFT = (function() {
-    
+
     function FFT(length) {
         this.length = length;
-    
+
         switch (length) {
             case 64:
                 this.roots = generateFFTTableShort(64);
                 break;
-    
+
             case 512:
                 this.roots = generateFFTTableLong(512);
                 break;
-    
+
             case 60:
                 this.roots = generateFFTTableShort(60);
                 break;
-    
+
             case 480:
                 this.roots = generateFFTTableLong(480);
                 break;
-    
+
             default:
                 throw new Error("unexpected FFT length: " + length);
         }
-    
+
         // processing buffers
         this.rev = new Array(length);
         for (var i = 0; i < length; i++) {
             this.rev[i] = new Float32Array(2);
         }
-    
+
         this.a = new Float32Array(2);
         this.b = new Float32Array(2);
         this.c = new Float32Array(2);
-        this.d = new Float32Array(2);     
+        this.d = new Float32Array(2);
         this.e1 = new Float32Array(2);
         this.e2 = new Float32Array(2);
     }
-    
+
     function generateFFTTableShort(len) {
         var t = 2 * Math.PI / len,
             cosT = Math.cos(t),
             sinT = Math.sin(t),
             f = new Array(len);
-    
+
         for (var i = 0; i < len; i++) {
             f[i] = new Float32Array(2);
         }
-    
+
         f[0][0] = 1;
         f[0][1] = 0;
         var lastImag = 0;
-    
+
         for (var i = 1; i < len; i++) {
             f[i][0] = f[i - 1][0] * cosT + lastImag * sinT;
             lastImag = lastImag * cosT - f[i - 1][0] * sinT;
             f[i][1] = -lastImag;
         }
-    
+
         return f;
     }
-    
+
     function generateFFTTableLong(len) {
         var t = 2 * Math.PI / len,
             cosT = Math.cos(t),
             sinT = Math.sin(t),
             f = new Array(len);
-    
+
         for (var i = 0; i < len; i++) {
             f[i] = new Float32Array(3);
         }
-    
+
         f[0][0] = 1;
         f[0][1] = 0;
         f[0][2] = 0;
-    
+
         for (var i = 1; i < len; i++) {
             f[i][0] = f[i - 1][0] * cosT + f[i - 1][2] * sinT;
             f[i][2] = f[i - 1][2] * cosT - f[i - 1][0] * sinT;
             f[i][1] = -f[i][2];
         }
-    
+
         return f;
     }
-    
+
     FFT.prototype.process = function(input, forward) {
         var length = this.length,
             imOffset = (forward ? 2 : 1),
             scale = (forward ? length : 1),
             rev = this.rev,
             roots = this.roots;
-    
+
         // bit-reversal
         var ii = 0;
         for (var i = 0; i < length; i++) {
             rev[i][0] = input[ii][0];
             rev[i][1] = input[ii][1];
-    
+
             var k = length >>> 1;
             while (ii >= k && k > 0) {
                 ii -= k;
                 k >>= 1;
             }
-    
+
             ii += k;
         }
-    
+
         var a = this.a,
             b = this.b,
             c = this.c,
             d = this.d,
             e1 = this.e1,
             e2 = this.e2;
-    
+
         for (var i = 0; i < length; i++) {
             input[i][0] = rev[i][0];
             input[i][1] = rev[i][1];
         }
-    
+
         // bottom base-4 round
         for (var i = 0; i < length; i += 4) {
             a[0] = input[i][0] + input[i + 1][0];
@@ -3613,12 +3612,12 @@ var FFT = (function() {
             input[i][1] = a[1] + b[1];
             input[i + 2][0] = a[0] - b[0];
             input[i + 2][1] = a[1] - b[1];
-    
+
             e1[0] = c[0] - d[1];
             e1[1] = c[1] + d[0];
             e2[0] = c[0] + d[1];
             e2[1] = c[1] - d[0];
-    
+
             if (forward) {
                 input[i + 1][0] = e2[0];
                 input[i + 1][1] = e2[1];
@@ -3631,12 +3630,12 @@ var FFT = (function() {
                 input[i+3][1] = e2[1];
             }
         }
-    
+
         // iterations from bottom to top
         for (var i = 4; i < length; i <<= 1) {
             var shift = i << 1,
                 m = length / shift;
-    
+
             for(var j = 0; j < length; j += shift) {
                 for(var k = 0; k < i; k++) {
                     var km = k * m,
@@ -3644,7 +3643,7 @@ var FFT = (function() {
                         rootIm = roots[km][imOffset],
                         zRe = input[i + j + k][0] * rootRe - input[i + j + k][1] * rootIm,
                         zIm = input[i + j + k][0] * rootIm + input[i + j + k][1] * rootRe;
-    
+
                     input[i + j + k][0] = (input[j + k][0] - zRe) * scale;
                     input[i + j + k][1] = (input[j + k][1] - zIm) * scale;
                     input[j + k][0] = (input[j + k][0] + zRe) * scale;
@@ -3653,9 +3652,9 @@ var FFT = (function() {
             }
         }
     };
-    
+
     return FFT;
-    
+
 })();
 
 // Modified Discrete Cosine Transform
@@ -3664,35 +3663,35 @@ function MDCT(length) {
     this.N2 = length >>> 1;
     this.N4 = length >>> 2;
     this.N8 = length >>> 3;
-    
+
     switch (length) {
         case 2048:
             this.sincos = MDCT_TABLE_2048;
             break;
-            
+
         case 256:
             this.sincos = MDCT_TABLE_256;
             break;
-            
+
         case 1920:
             this.sincos = MDCT_TABLE_1920;
             break;
-            
+
         case 240:
             this.sincos = MDCT_TABLE_240;
             break;
-            
+
         default:
             throw new Error("unsupported MDCT length: " + length);
     }
-    
+
     this.fft = new FFT(this.N4);
-    
+
     this.buf = new Array(this.N4);
     for (var i = 0; i < this.N4; i++) {
         this.buf[i] = new Float32Array(2);
     }
-    
+
     this.tmp = new Float32Array(2);
 }
 
@@ -3705,16 +3704,16 @@ MDCT.prototype.process = function(input, inOffset, output, outOffset) {
         tmp = this.tmp,
         sincos = this.sincos,
         fft = this.fft;
-    
+
     // pre-IFFT complex multiplication
     for (var k = 0; k < N4; k++) {
         buf[k][1] = (input[inOffset + 2 * k] * sincos[k][0]) + (input[inOffset + N2 - 1 - 2 * k] * sincos[k][1]);
         buf[k][0] = (input[inOffset + N2 - 1 - 2 * k] * sincos[k][0]) - (input[inOffset + 2 * k] * sincos[k][1]);
     }
-    
+
     // complex IFFT, non-scaling
     fft.process(buf, false);
-    
+
     // post-IFFT complex multiplication
     for (var k = 0; k < N4; k++) {
         tmp[0] = buf[k][0];
@@ -3722,7 +3721,7 @@ MDCT.prototype.process = function(input, inOffset, output, outOffset) {
         buf[k][1] = (tmp[1] * sincos[k][0]) + (tmp[0] * sincos[k][1]);
         buf[k][0] = (tmp[0] * sincos[k][0]) - (tmp[1] * sincos[k][1]);
     }
-    
+
     // reordering
     for (var k = 0; k < N8; k += 2) {
         output[outOffset + 2 * k] = buf[N8 + k][1];
@@ -3752,29 +3751,29 @@ MDCT.prototype.process = function(input, inOffset, output, outOffset) {
 };
 
 var FilterBank = (function() {
-  
+
   function FilterBank(smallFrames, channels) {
       if (smallFrames) {
           throw new Error("WHA?? No small frames allowed.");
       }
-  
+
       this.length = 1024;
       this.shortLength = 128;
-  
+
       this.mid = (this.length - this.shortLength) / 2;
       this.trans = this.shortLength / 2;
-  
+
       this.mdctShort = new MDCT(this.shortLength * 2);
       this.mdctLong  = new MDCT(this.length * 2);
-  
+
       this.overlaps = new Array(channels);
       for (var i = 0; i < channels; i++) {
           this.overlaps[i] = new Float32Array(this.length);
       }
-  
+
       this.buf = new Float32Array(2 * this.length);
   }
-    
+
   function generateSineWindow(len) {
       var d = new Float32Array(len);
       for (var i = 0; i < len; i++) {
@@ -3782,41 +3781,41 @@ var FilterBank = (function() {
       }
       return d;
   }
-  
+
   function generateKBDWindow(alpha, len) {
       var PIN = Math.PI / len,
           out = new Float32Array(len),
           sum = 0,
           f = new Float32Array(len),
           alpha2 = (alpha * PIN) * (alpha * PIN);
-  
+
       for (var n = 0; n < len; n++) {
           var tmp = n * (len - n) * alpha2,
               bessel = 1;
-  
+
           for (var j = 50; j > 0; j--) {
               bessel = bessel * tmp / (j * j) + 1;
           }
-  
+
           sum += bessel;
           f[n] = sum;
       }
-  
+
       sum++;
       for (var n = 0; n < len; n++) {
           out[n] = Math.sqrt(f[n] / sum);
       }
-  
+
       return out;
   }
-  
+
   const SINE_1024 = generateSineWindow(1024),
         SINE_128  = generateSineWindow(128),
         KBD_1024  = generateKBDWindow(4, 1024),
         KBD_128   = generateKBDWindow(6, 128),
         LONG_WINDOWS = [SINE_1024, KBD_1024],
         SHORT_WINDOWS = [SINE_128, KBD_128];
-  
+
   FilterBank.prototype.process = function(info, input, output, channel) {
       var overlap = this.overlaps[channel],
           windowShape = info.windowShape[1],
@@ -3832,128 +3831,128 @@ var FilterBank = (function() {
           buf = this.buf,
           mdctLong = this.mdctLong,
           mdctShort = this.mdctShort;
-  
+
       switch (info.windowSequence) {
           case ICStream.ONLY_LONG_SEQUENCE:
               mdctLong.process(input, 0, buf, 0);
-  
+
               // add second half output of previous frame to windowed output of current frame
               for (var i = 0; i < length; i++) {
                   output[i] = overlap[i] + (buf[i] * longWindowsPrev[i]);
               }
-  
+
               // window the second half and save as overlap for next frame
               for (var i = 0; i < length; i++) {
                   overlap[i] = buf[length + i] * longWindows[length - 1 - i];
               }
-  
+
               break;
-  
+
           case ICStream.LONG_START_SEQUENCE:
               mdctLong.process(input, 0, buf, 0);
-  
+
               // add second half output of previous frame to windowed output of current frame
               for (var i = 0; i < length; i++) {
                   output[i] = overlap[i] + (buf[i] * longWindowsPrev[i]);
               }
-  
+
               // window the second half and save as overlap for next frame
               for (var i = 0; i < mid; i++) {
                   overlap[i] = buf[length + i];
               }
-  
+
               for (var i = 0; i < shortLen; i++) {
                   overlap[mid + i] = buf[length + mid + i] * shortWindows[shortLen - i - 1];
               }
-  
+
               for (var i = 0; i < mid; i++) {
                   overlap[mid + shortLen + i] = 0;
               }
-  
+
               break;
-  
+
           case ICStream.EIGHT_SHORT_SEQUENCE:
               for (var i = 0; i < 8; i++) {
                   mdctShort.process(input, i * shortLen, buf, 2 * i * shortLen);
               }
-  
+
               // add second half output of previous frame to windowed output of current frame
               for (var i = 0; i < mid; i++) {
                   output[i] = overlap[i];
               }
-  
+
               for (var i = 0; i < shortLen; i++) {
                   output[mid + i] = overlap[mid + i] + buf[i] * shortWindowsPrev[i];
                   output[mid + 1 * shortLen + i] = overlap[mid + shortLen * 1 + i] + (buf[shortLen * 1 + i] * shortWindows[shortLen - 1 - i]) + (buf[shortLen * 2 + i]  * shortWindows[i]);
                   output[mid + 2 * shortLen + i] = overlap[mid + shortLen * 2 + i] + (buf[shortLen * 3 + i] * shortWindows[shortLen - 1 - i]) + (buf[shortLen * 4 + i] * shortWindows[i]);
                   output[mid + 3 * shortLen + i] = overlap[mid + shortLen * 3 + i] + (buf[shortLen * 5 + i] * shortWindows[shortLen - 1 - i]) + (buf[shortLen * 6 + i] * shortWindows[i]);
-  
+
                   if (i < trans)
                       output[mid + 4 * shortLen + i] = overlap[mid + shortLen * 4 + i] + (buf[shortLen * 7 + i] * shortWindows[shortLen - 1 - i]) + (buf[shortLen * 8 + i] * shortWindows[i]);
               }
-  
+
               // window the second half and save as overlap for next frame
               for (var i = 0; i < shortLen; i++) {
-                  if(i >= trans) 
+                  if(i >= trans)
                       overlap[mid + 4 * shortLen + i - length] = (buf[shortLen * 7 + i] * shortWindows[shortLen - 1 - i]) + (buf[shortLen * 8 + i] * shortWindows[i]);
-  
+
                   overlap[mid+5*shortLen + i - length] = (buf[shortLen*9+i]*shortWindows[shortLen-1-i]) + (buf[shortLen*10+i]*shortWindows[i]);
                   overlap[mid+6*shortLen + i - length] = (buf[shortLen*11+i]*shortWindows[shortLen-1-i]) + (buf[shortLen*12+i]*shortWindows[i]);
                   overlap[mid+7*shortLen + i - length] = (buf[shortLen*13+i]*shortWindows[shortLen-1-i]) + (buf[shortLen*14+i]*shortWindows[i]);
                   overlap[mid+8*shortLen + i - length] = (buf[shortLen*15+i]*shortWindows[shortLen-1-i]);
               }
-  
+
               for (var i = 0; i < mid; i++) {
                   overlap[mid + shortLen + i] = 0;
               }
-  
+
               break;
-  
+
           case ICStream.LONG_STOP_SEQUENCE:
               mdctLong.process(input, 0, buf, 0);
-  
+
               // add second half output of previous frame to windowed output of current frame
               // construct first half window using padding with 1's and 0's
               for (var i = 0; i < mid; i++) {
                   output[i] = overlap[i];
               }
-  
+
               for (var i = 0; i < shortLen; i++) {
                   output[mid + i] = overlap[mid + i] + (buf[mid + i] * shortWindowsPrev[i]);
               }
-  
+
               for (var i = 0; i < mid; i++) {
                   output[mid + shortLen + i] = overlap[mid + shortLen + i] + buf[mid + shortLen + i];
               }
-  
+
               // window the second half and save as overlap for next frame
               for (var i = 0; i < length; i++) {
                   overlap[i] = buf[length + i] * longWindows[length - 1 - i];
               }
-  
+
               break;
       }
   };
-  
+
   return FilterBank;
-    
+
 })();
 
-AACDecoder = Decoder.extend(function() {
+const AACDecoder = Decoder.extend(function() {
     Decoder.register('mp4a', this);
     Decoder.register('aac ', this);
-    
+
     const SAMPLE_RATES = new Int32Array([
         96000, 88200, 64000, 48000, 44100, 32000,
-        24000, 22050, 16000, 12000, 11025, 8000, 7350    
+        24000, 22050, 16000, 12000, 11025, 8000, 7350
     ]);
-    
+
     // AAC profiles
     const AOT_AAC_MAIN = 1, // no
           AOT_AAC_LC = 2,   // yes
           AOT_AAC_LTP = 4,  // no
           AOT_ESCAPE = 31;
-          
+
     // Channel configurations
     const CHANNEL_CONFIG_NONE = 0,
           CHANNEL_CONFIG_MONO = 1,
@@ -3963,18 +3962,18 @@ AACDecoder = Decoder.extend(function() {
           CHANNEL_CONFIG_FIVE = 5,
           CHANNEL_CONFIG_FIVE_PLUS_ONE = 6,
           CHANNEL_CONFIG_SEVEN_PLUS_ONE = 8;
-    
+
     this.prototype.setCookie = function(buffer) {
         var data = Stream.fromBuffer(buffer),
             stream = new Bitstream(data);
-        
+
         this.format.bitsPerChannel = 16; // caf format doesn't encode this
         this.config = {};
-        
+
         this.config.profile = stream.readSmall(5);
         if (this.config.profile === AOT_ESCAPE)
             this.config.profile = 32 + stream.readSmall(6);
-            
+
         this.config.sampleIndex = stream.readSmall(4);
         if (this.config.sampleIndex === 0x0f) {
             this.config.sampleRate = stream.read(24);
@@ -3987,49 +3986,49 @@ AACDecoder = Decoder.extend(function() {
         } else {
             this.config.sampleRate = SAMPLE_RATES[this.config.sampleIndex];
         }
-            
+
         this.config.chanConfig = stream.readSmall(4);
-        
+
         switch (this.config.profile) {
             case AOT_AAC_MAIN:
             case AOT_AAC_LC:
             case AOT_AAC_LTP:
                 if (stream.readOne()) // frameLengthFlag
                     return this.emit('error', 'frameLengthFlag not supported');
-                    
+
                 this.config.frameLength = 1024;
-                    
+
                 if (stream.readOne()) // dependsOnCoreCoder
                     stream.advance(14); // coreCoderDelay
-                    
+
                 if (stream.readOne()) { // extensionFlag
                     if (this.config.profile > 16) { // error resiliant profile
                         this.config.sectionDataResilience = stream.readOne();
                         this.config.scalefactorResilience = stream.readOne();
                         this.config.spectralDataResilience = stream.readOne();
                     }
-                    
+
                     stream.advance(1);
                 }
-                
+
                 if (this.config.chanConfig === CHANNEL_CONFIG_NONE) {
                     stream.advance(4) // element_instance_tag
                     this.emit('error', 'PCE unimplemented');
                 }
-                
+
                 break;
-                
+
             default:
                 this.emit('error', 'AAC profile ' + this.config.profile + ' not supported.');
                 return;
         }
-        
-        this.filter_bank = new FilterBank(false, this.config.chanConfig);        
+
+        this.filter_bank = new FilterBank(false, this.config.chanConfig);
         this.ics = new ICStream(this.config);
         this.cpe = new CPEElement(this.config);
         this.cce = new CCEElement(this.config);
     };
-    
+
     const SCE_ELEMENT = 0,
           CPE_ELEMENT = 1,
           CCE_ELEMENT = 2,
@@ -4038,27 +4037,27 @@ AACDecoder = Decoder.extend(function() {
           PCE_ELEMENT = 5,
           FIL_ELEMENT = 6,
           END_ELEMENT = 7;
-    
+
     // The main decoding function.
     this.prototype.readChunk = function() {
         var stream = this.bitstream;
-        
+
         if (!stream.available(1))
             return this.once('available', this.readChunk);
-        
+
         if (stream.peek(12) === 0xfff) {
             this.emit('error', 'adts header') // NOPE
         }
-        
+
         this.cces = [];
         var elements = [],
             config = this.config,
             frameLength = config.frameLength,
             elementType = null;
-        
+
         while ((elementType = stream.readSmall(3)) !== END_ELEMENT) {
             var id = stream.readSmall(4);
-            
+
             switch (elementType) {
                 // single channel and low frequency elements
                 case SCE_ELEMENT:
@@ -4068,7 +4067,7 @@ AACDecoder = Decoder.extend(function() {
                     elements.push(ics);
                     ics.decode(stream, config, false);
                     break;
-                    
+
                 // channel pair element
                 case CPE_ELEMENT:
                     var cpe = this.cpe;
@@ -4076,85 +4075,85 @@ AACDecoder = Decoder.extend(function() {
                     elements.push(cpe);
                     cpe.decode(stream, config);
                     break;
-                
+
                 // channel coupling element
                 case CCE_ELEMENT:
                     var cce = this.cce;
                     this.cces.push(cce);
                     cce.decode(stream, config);
                     break;
-                    
+
                 // data-stream element
                 case DSE_ELEMENT:
                     var align = stream.readOne(),
                         count = stream.readSmall(8);
-                        
+
                     if (count === 255)
                         count += stream.readSmall(8);
-                        
+
                     if (align)
                         stream.align();
-                        
+
                     // skip for now...
                     stream.advance(count * 8);
                     break;
-                    
+
                 // program configuration element
                 case PCE_ELEMENT:
                     throw new Error("TODO: PCE_ELEMENT")
                     break;
-                    
+
                 // filler element
                 case FIL_ELEMENT:
                     if (id === 15)
                         id += stream.read(8) - 1;
-                        
+
                     // skip for now...
                     stream.advance(id * 8);
                     break;
-                    
+
                 default:
                     return this.emit('error', 'Unknown element')
             }
         }
-        
+
         stream.align();
         this.process(elements);
-        
+
         // Interleave channels
         var data = this.data,
             channels = data.length,
             output = new Int16Array(frameLength * channels),
             j = 0;
-            
+
         for (var k = 0; k < frameLength; k++) {
             for (var i = 0; i < channels; i++) {
                 output[j++] = Math.max(Math.min(data[i][k], 32767), -32768);
             }
         }
-        
+
         this.emit('data', output);
     };
-    
+
     this.prototype.process = function(elements) {
         var channels = this.config.chanConfig;
-        
+
         // if (channels === 1 && psPresent)
         // TODO: sbrPresent (2)
         var mult = 1;
-        
+
         var len = mult * this.config.frameLength;
         var data = this.data = [];
-        
+
         // Initialize channels
         for (var i = 0; i < channels; i++) {
             data[i] = new Float32Array(len);
         }
-        
+
         var channel = 0;
         for (var i = 0; i < elements.length && channel < channels; i++) {
             var e = elements[i];
-            
+
             if (e instanceof ICStream) { // SCE or LFE element
                 channel += this.processSingle(e, channel);
             } else if (e instanceof CPEElement) {
@@ -4167,42 +4166,42 @@ AACDecoder = Decoder.extend(function() {
             }
         }
     };
-    
+
     this.prototype.processSingle = function(element, channel) {
         var profile = this.config.profile,
             info = element.info,
             data = element.data;
-            
+
         if (profile === AOT_AAC_MAIN)
             throw new Error("Main prediction unimplemented");
-            
+
         if (profile === AOT_AAC_LTP)
             throw new Error("LTP prediction unimplemented");
-            
+
         this.applyChannelCoupling(element, CCEElement.BEFORE_TNS, data, null);
-        
+
         if (element.tnsPresent)
             element.tns.process(element, data, false);
-            
+
         this.applyChannelCoupling(element, CCEElement.AFTER_TNS, data, null);
-        
+
         // filterbank
         this.filter_bank.process(info, data, this.data[channel], channel);
-        
+
         if (profile === AOT_AAC_LTP)
             throw new Error("LTP prediction unimplemented");
-        
+
         this.applyChannelCoupling(element, CCEElement.AFTER_IMDCT, this.data[channel], null);
-        
+
         if (element.gainPresent)
             throw new Error("Gain control not implemented");
-            
+
         if (this.sbrPresent)
             throw new Error("SBR not implemented");
-            
+
         return 1;
     };
-    
+
     this.prototype.processPair = function(element, channel) {
         var profile = this.config.profile,
             left = element.left,
@@ -4211,49 +4210,49 @@ AACDecoder = Decoder.extend(function() {
             r_info = right.info,
             l_data = left.data,
             r_data = right.data;
-            
+
         // Mid-side stereo
         if (element.commonWindow && element.maskPresent)
             this.processMS(element, l_data, r_data);
-            
+
         if (profile === AOT_AAC_MAIN)
             throw new Error("Main prediction unimplemented");
-        
-        // Intensity stereo    
+
+        // Intensity stereo
         this.processIS(element, l_data, r_data);
-            
+
         if (profile === AOT_AAC_LTP)
             throw new Error("LTP prediction unimplemented");
-            
+
         this.applyChannelCoupling(element, CCEElement.BEFORE_TNS, l_data, r_data);
-        
+
         if (left.tnsPresent)
             left.tns.process(left, l_data, false);
-            
+
         if (right.tnsPresent)
             right.tns.process(right, r_data, false);
-        
+
         this.applyChannelCoupling(element, CCEElement.AFTER_TNS, l_data, r_data);
-        
+
         // filterbank
         this.filter_bank.process(l_info, l_data, this.data[channel], channel);
         this.filter_bank.process(r_info, r_data, this.data[channel + 1], channel + 1);
-        
+
         if (profile === AOT_AAC_LTP)
             throw new Error("LTP prediction unimplemented");
-        
+
         this.applyChannelCoupling(element, CCEElement.AFTER_IMDCT, this.data[channel], this.data[channel + 1]);
-        
+
         if (left.gainPresent)
             throw new Error("Gain control not implemented");
-            
+
         if (right.gainPresent)
             throw new Error("Gain control not implemented");
-            
+
         if (this.sbrPresent)
             throw new Error("SBR not implemented");
     };
-    
+
     // Intensity stereo
     this.prototype.processIS = function(element, left, right) {
         var ics = element.right,
@@ -4264,23 +4263,23 @@ AACDecoder = Decoder.extend(function() {
             bandTypes = ics.bandTypes,
             sectEnd = ics.sectEnd,
             scaleFactors = ics.scaleFactors;
-        
+
         var idx = 0, groupOff = 0;
         for (var g = 0; g < windowGroups; g++) {
             for (var i = 0; i < maxSFB;) {
                 var end = sectEnd[idx];
-                
+
                 if (bandTypes[idx] === ICStream.INTENSITY_BT || bandTypes[idx] === ICStream.INTENSITY_BT2) {
                     for (; i < end; i++, idx++) {
                         var c = bandTypes[idx] === ICStream.INTENSITY_BT ? 1 : -1;
                         if (element.maskPresent)
                             c *= element.ms_used[idx] ? -1 : 1;
-                            
+
                         var scale = c * scaleFactors[idx];
                         for (var w = 0; w < info.groupLength[g]; w++) {
                             var off = groupOff + w * 128 + offsets[i],
                                 len = offsets[i + 1] - offsets[i];
-                                
+
                             for (var j = 0; j < len; j++) {
                                 right[off + j] = left[off + j] * scale;
                             }
@@ -4291,11 +4290,11 @@ AACDecoder = Decoder.extend(function() {
                     i = end;
                 }
             }
-            
+
             groupOff += info.groupLength[g] * 128;
         }
     };
-    
+
     // Mid-side stereo
     this.prototype.processMS = function(element, left, right) {
         var ics = element.left,
@@ -4305,7 +4304,7 @@ AACDecoder = Decoder.extend(function() {
             maxSFB = info.maxSFB,
             sfbCBl = ics.bandTypes,
             sfbCBr = element.right.bandTypes;
-            
+
         var groupOff = 0, idx = 0;
         for (var g = 0; g < windowGroups; g++) {
             for (var i = 0; i < maxSFB; i++, idx++) {
@@ -4323,16 +4322,16 @@ AACDecoder = Decoder.extend(function() {
             groupOff += info.groupLength[g] * 128;
         }
     };
-    
+
     this.prototype.applyChannelCoupling = function(element, couplingPoint, data1, data2) {
         var cces = this.cces,
             isChannelPair = element instanceof CPEElement,
             applyCoupling = couplingPoint === CCEElement.AFTER_IMDCT ? 'applyIndependentCoupling' : 'applyDependentCoupling';
-        
+
         for (var i = 0; i < cces.length; i++) {
             var cce = cces[i],
                 index = 0;
-                
+
             if (cce.couplingPoint === couplingPoint) {
                 for (var c = 0; c < cce.coupledCount; c++) {
                     var chSelect = cce.chSelect[c];
@@ -4341,10 +4340,10 @@ AACDecoder = Decoder.extend(function() {
                             cce[applyCoupling](index, data1);
                             if (chSelect) index++;
                         }
-                        
+
                         if (chSelect !== 2)
                             cce[applyCoupling](index++, data2);
-                            
+
                     } else {
                         index += 1 + (chSelect === 3 ? 1 : 0);
                     }
@@ -4352,7 +4351,8 @@ AACDecoder = Decoder.extend(function() {
             }
         }
     };
-    
+
 });
 
-})();
+export default AACDecoder
+

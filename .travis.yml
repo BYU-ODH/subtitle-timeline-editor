@@ -5,19 +5,4 @@ cache:
   directories:
   - node_modules
 script:
-- gulp clean
-before_deploy:
-- cd build
-- tag=$(git tag --points-at $TRAVIS_COMMIT | tail -1)
-- tar cf ../$tag.tar *
-- cd ..
-- if [[ -n "$(git branch --contains $TRAVIS_COMMIT | grep master)" ]]; then prerelease=false; else prerelease=true; fi
-deploy:
-  provider: releases
-  api_key:
-    secure: NLUMankd1zzyldmG6JY2qxrvXifuNXihgLOHyQhyJ6mVJdNoP9Q0Xz3z1cdvxof/H3pDLAeEir3A7hbyTjhupj2ZCth6kRegAklNb+Ae6Lz8J3YeUoDpHIJsr13kwzBTAKh0Fv8KKNUcEE7MaTcx52QQgwJW91GHiP1D+jSG/3glNjmYlojWxb93X083rw1pq5l/5UobSwljgD77B62bdMnlU9pIQXwVT1fcWAhlNWj2jcf4LCaZ46idPD3szsqUVl9Ze00r0Z3zKxQqlm9Sk4J+8i05oRqRmkNT0unrxB+0ySJff5xk0vx33G5T2ck0UUxCBrVtMmjFA9TgjdU2aL++FWO6TpdiEOhTm/pzQui3MVCGGp2WocFIE7Wef9MbNcyenOCDqbKgyu8UoH6wHKdCqQUukTvksxaaWP6txR2QMt51BwwQ7n8O6u1gaNvmVOfpqXybcp7NIvxDnEFIeWXpeQJ6bXdDL+MSzu+dSZoQcIsnF62PfRSVGWFnqNt2CKyfSkDnZdGvf1wym1npV7hLwbDrYnqLbiLPbSDMre8PvmpRam05UNhJscCR0bmwB5AfryWD2m//Cl2GoZawdDkhv6suXcucYkKGD+5RwLD9m4kMNnDTIgGIVPH+Q+IWVC2bLt3Da2Xcgej+RHoVwPa6/2i/5mSXO0McY3I7mis=
-  file: $tag.tar
-  skip_cleanup: true
-  on:
-    tags: true
-  prerelease: $prerelease
+- npm run compile

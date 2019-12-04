@@ -1,4 +1,4 @@
-(function() {
+import { Base, Demuxer, Decoder } from './aurora'
 
 var ID3Stream = Base.extend({
     constructor: function(header, stream) {
@@ -496,7 +496,7 @@ var ID3v22Stream = ID3Stream.extend({
     }
 });
 
-MP3Demuxer = Demuxer.extend(function() {
+const MP3Demuxer = Demuxer.extend(function() {
     Demuxer.register(this);
     
     this.probe = function(stream) {
@@ -6733,7 +6733,7 @@ MP3Synth.prototype.frame = function (frame) {
     this.phase = (this.phase + ns) % 16;
 };
 
-MP3Decoder = Decoder.extend(function() {
+const MP3Decoder = Decoder.extend(function() {
     Decoder.register('mp3', this);
     
     this.prototype.init = function() {
@@ -6777,4 +6777,8 @@ MP3Decoder = Decoder.extend(function() {
     };
 });
 
-})();
+export default {
+    MP3Decoder,
+    MP3Demuxer,
+}
+

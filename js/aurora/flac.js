@@ -1,3 +1,4 @@
+import { Base, Demuxer, Decoder } from './aurora'
 /*
  * FLAC.js - Free Lossless Audio Codec decoder in JavaScript
  * By Devon Govett and Jens Nockert of Official.fm Labs
@@ -14,7 +15,7 @@
  *
  */
 
-FLACDemuxer = Demuxer.extend(function() {
+const FLACDemuxer = Demuxer.extend(function() {
     Demuxer.register(this);
     
     this.probe = function(buffer) {
@@ -149,7 +150,7 @@ FLACDemuxer = Demuxer.extend(function() {
     
 });
 
-FLACDecoder = Decoder.extend(function() {
+const FLACDecoder = Decoder.extend(function() {
     Decoder.register('flac', this);
     
     this.prototype.setCookie = function(cookie) {
@@ -648,3 +649,5 @@ FLACDecoder = Decoder.extend(function() {
         return output + 4;
     }
 });
+
+export default FLACDecoder

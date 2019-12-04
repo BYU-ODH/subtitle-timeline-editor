@@ -1619,3 +1619,10 @@ M4ADemuxer = (function(_super) {
   return M4ADemuxer;
 
 })(Demuxer);
+
+export {
+    Reader,
+    Decoder,
+    Demuxer,
+    Base,
+}

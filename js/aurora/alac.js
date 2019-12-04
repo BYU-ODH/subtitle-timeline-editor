@@ -1,3 +1,5 @@
+import { Base, Demuxer, Decoder } from './aurora'
+
 var Aglib;
 
 Aglib = (function() {
@@ -659,3 +661,5 @@ ALACDecoder = (function(_super) {
   return ALACDecoder;
 
 })(Decoder);
+
+export default ALACDecoder
