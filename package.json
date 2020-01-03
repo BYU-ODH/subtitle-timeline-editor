@@ -1,6 +1,6 @@
 {
   "name": "yvideo-subtitle-timeline-editor",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "timeline for editing captions",
   "main": "lib/index.js",
   "directories": {
