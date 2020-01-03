@@ -1,3 +1,5 @@
+import Timeline from './Timeline'
+
 function genTextChange(text, editor){
 	return function(){
 		this.text = text;
