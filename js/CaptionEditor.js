@@ -1,4 +1,5 @@
 import Timeline from './Timeline'
+import { CommandStack } from 'yvideo-editorwidgets'
 
 function genTextChange(text, editor){
 	return function(){
@@ -17,7 +18,7 @@ function CaptionEditor(params){
 	this.rebuildCaptions = typeof params.rebuild === "function" ? params.rebuild : function(){};
 	this.timeline = timeline;
 	this.commandStack = timeline ? timeline.commandStack :
-						params.stack instanceof EditorWidgets.CommandStack ? params.stack :
+						params.stack instanceof CommandStack ? params.stack :
 						null;
 }
 
