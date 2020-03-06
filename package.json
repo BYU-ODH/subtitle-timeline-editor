@@ -1,6 +1,6 @@
 {
   "name": "yvideo-subtitle-timeline-editor",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "timeline for editing captions",
   "main": "lib/index.js",
   "directories": {
@@ -23,7 +23,7 @@
   "homepage": "https://github.com/BYU-ODH/subtitle-timeline-editor#readme",
   "dependencies": {
     "babel-runtime": "^6.26.0",
-    "yvideo-editorwidgets": "^1.1.0",
+    "yvideo-editorwidgets": "^1.1.1",
     "yvideo-timedtext": "^1.0.1"
   },
   "devDependencies": {
